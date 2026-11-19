@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Розенбаум Q-критерийі — интерактивті түсіндірме</title>
+<meta name="description" content="Розенбаум Q-критерийі: идеясы, алгоритмі, калькулятор, диссертацияның эксперимент бөлімінде қолдану, ойын және есептер.">
+<style>
+:root{
+  --bg:#f6f7fb;--card:#fff;--ink:#1b2133;--muted:#59627a;--line:#e2e6f0;
+  --a:#4f46e5;--a-soft:#eceeff;--b:#f97316;--b-soft:#fff0e4;
+  --ok:#15803d;--ok-soft:#e3f6ea;--warn:#b45309;--warn-soft:#fff3d6;--bad:#b91c1c;--bad-soft:#fde8e8;
+  --zone:rgba(120,130,160,.14);--r:16px;--shadow:0 6px 24px rgba(30,40,80,.08);
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1220;--card:#181c30;--ink:#eef0fa;--muted:#a3abc4;--line:#2a3050;
+  --a:#8b85ff;--a-soft:#232850;--b:#fb923c;--b-soft:#3a2615;
+  --ok:#4ade80;--ok-soft:#14301f;--warn:#fbbf24;--warn-soft:#3a2f0f;--bad:#f87171;--bad-soft:#3a1717;
+  --zone:rgba(160,170,210,.14);--shadow:none}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 18px}
+h1,h2,h3{line-height:1.2;margin:0 0 .5em}
+h2{font-size:clamp(1.4rem,3.4vw,1.9rem)}
+h3{font-size:1.1rem}
+p{margin:.5em 0}
+.muted{color:var(--muted)}
+section{padding:44px 0 8px}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--a);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin:16px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+/* hero */
+.hero{background:linear-gradient(135deg,#312e81,#4f46e5 55%,#7c3aed);color:#fff;padding:54px 0 46px}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);margin-bottom:.3em}
+.hero p{max-width:640px;font-size:1.08rem;opacity:.95}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:99px;font-size:.88rem}
+.btn{display:inline-block;border:0;border-radius:12px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;background:var(--a);color:#fff;text-decoration:none;transition:transform .08s,opacity .15s}
+.btn:hover{opacity:.92}.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--a);border:1.5px solid var(--a)}
+.btn.light{background:#fff;color:#312e81}
+.btn.sm{padding:6px 12px;font-size:.9rem;border-radius:10px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:8px 18px;scrollbar-width:none}
+nav a{white-space:nowrap;padding:6px 12px;border-radius:99px;color:var(--muted);text-decoration:none;font-size:.92rem;font-weight:600}
+nav a:hover{background:var(--a-soft);color:var(--a)}
+
+/* formula */
+.formula{font-size:1.25rem;text-align:center;padding:14px;background:var(--a-soft);border-radius:12px;margin:12px 0;font-weight:600}
+.formula small{display:block;font-weight:400;font-size:.88rem;color:var(--muted);margin-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.88rem;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.a{background:var(--a)}.legend i.b{background:var(--b)}
+
+/* plot */
+.plot{width:100%;overflow-x:auto}
+.plot svg{width:100%;min-width:560px;height:auto;display:block}
+.ax text{fill:var(--muted);font-size:12px}
+.ax line,.ax path{stroke:var(--line);stroke-width:1.5}
+.rowlbl{font-size:13px;font-weight:700;fill:var(--ink)}
+.dot{stroke:var(--card);stroke-width:1.5;transition:opacity .2s}
+.dA{fill:var(--a)}.dB{fill:var(--b)}
+.dot.dim{opacity:.22}
+.dot.cnt{stroke:var(--ink);stroke-width:3}
+.dot.sel{stroke:var(--ink);stroke-width:3.5}
+.dot.ok{stroke:#16a34a;stroke-width:4}
+.dot.bad{stroke:#dc2626;stroke-width:4}
+.dot.miss{stroke:#d97706;stroke-width:3.5;stroke-dasharray:3 2}
+.clickable .dot{cursor:pointer}
+.clickable .dot:hover{stroke:var(--ink);stroke-width:2.5}
+.bound{stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 4}
+.boundtxt{font-size:12px;font-weight:700;fill:var(--ink)}
+.zone{fill:var(--zone)}
+.zonetxt{font-size:11px;fill:var(--muted)}
+
+/* meter */
+.meter{position:relative;height:30px;border-radius:99px;background:var(--line);margin:34px 0 26px;overflow:visible}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:#9aa3bd;transition:width .25s,background .25s}
+.meter .fill.p05{background:#d97706}.meter .fill.p01{background:#16a34a}
+.meter .tick{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink)}
+.meter .tick span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:.78rem;white-space:nowrap;font-weight:700}
+.meter .val{position:absolute;right:10px;top:3px;font-weight:800;color:#fff;font-size:.95rem;mix-blend-mode:normal;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+input[type=range]{width:100%;accent-color:var(--a)}
+.badge{display:inline-block;padding:4px 12px;border-radius:99px;font-weight:700;font-size:.9rem}
+.badge.ns{background:var(--line);color:var(--muted)}
+.badge.p05{background:var(--warn-soft);color:var(--warn)}
+.badge.p01{background:var(--ok-soft);color:var(--ok)}
+.badge.na{background:var(--bad-soft);color:var(--bad)}
+
+/* stepper */
+.steps{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.steps button{flex:1;min-width:70px;border:1.5px solid var(--line);background:var(--card);color:var(--muted);border-radius:12px;padding:8px;font:inherit;font-weight:700;cursor:pointer}
+.steps button.on{border-color:var(--a);background:var(--a-soft);color:var(--a)}
+.steps button.done{color:var(--ok);border-color:var(--ok)}
+.stepbox{background:var(--a-soft);border-radius:12px;padding:14px 16px;margin:8px 0}
+
+/* forms */
+textarea,input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:9px 11px}
+textarea{min-height:110px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--a);outline-offset:1px}
+label{display:block;font-size:.85rem;font-weight:700;margin:10px 0 4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:1.5rem}
+.stat span{font-size:.8rem;color:var(--muted)}
+.stat.big{background:var(--a-soft);border-color:var(--a)}
+.note{border-left:4px solid var(--warn);background:var(--warn-soft);padding:9px 12px;border-radius:0 10px 10px 0;margin:8px 0;font-size:.92rem}
+.note.ok{border-color:var(--ok);background:var(--ok-soft)}
+.note.bad{border-color:var(--bad);background:var(--bad-soft)}
+.note.info{border-color:var(--a);background:var(--a-soft)}
+.quote{background:var(--bg);border:1.5px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:.95rem}
+
+/* tabs */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--a);border-color:var(--a);color:#fff}
+.tabpane{display:none}.tabpane.on{display:block}
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+@media(max-width:700px){.timeline{grid-template-columns:1fr}}
+.tl{border-radius:12px;padding:12px;border:1.5px solid var(--line);background:var(--bg)}
+.tl b{display:block;margin-bottom:4px}
+.tl.use{border-color:var(--ok);background:var(--ok-soft)}
+.tl.no{opacity:.75}
+
+/* game */
+.hud{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pill{background:var(--a-soft);color:var(--a);border-radius:99px;padding:5px 14px;font-weight:700}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.opts button{flex:1;min-width:150px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:10px;font:inherit;cursor:pointer}
+.opts button.on{border-color:var(--a);background:var(--a-soft);font-weight:700}
+.opts button.right{border-color:var(--ok);background:var(--ok-soft)}
+.opts button.wrong{border-color:var(--bad);background:var(--bad-soft)}
+
+/* tasks */
+.task h3{display:flex;gap:10px;align-items:center}
+.task h3 .n{background:var(--a);color:#fff;border-radius:50%;width:30px;height:30px;display:inline-grid;place-items:center;font-size:.95rem;flex:none}
+.data{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px}
+.data span{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:1px 8px;font-variant-numeric:tabular-nums;font-size:.92rem}
+.data.a span{border-color:var(--a)}.data.b span{border-color:var(--b)}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.mc label{display:flex;gap:8px;align-items:flex-start;font-weight:500;font-size:1rem;margin:6px 0;cursor:pointer}
+.mc input{margin-top:5px;accent-color:var(--a)}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:8px 0}
+summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:6px}
+footer{margin-top:50px;padding:30px 0;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+ul.clean{padding-left:20px;margin:6px 0}
+ul.clean li{margin:4px 0}
+.sub{font-size:.8em;vertical-align:sub}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow" style="color:#c7c9ff">Математикалық статистика · педагогикалық эксперимент</div>
+    <h1>Розенбаум Q-критерийі</h1>
+    <p>Екі топтың нәтижесі шынымен ерекшеленеді ме, әлде бұл — кездейсоқтық па? Q-критерийі мұны бірнеше минутта, қолмен, тек санау арқылы анықтауға мүмкіндік береді.</p>
+    <div class="chips">
+      <span class="chip">Екі тәуелсіз таңдама</span>
+      <span class="chip">n = 11…26</span>
+      <span class="chip">Q<span class="sub">0,05</span> = 6</span>
+      <span class="chip">Q<span class="sub">0,01</span> = 9</span>
+    </div>
+    <a class="btn light" href="#idea">Бастайық →</a>
+    <a class="btn ghost" style="color:#fff;border-color:#fff;margin-left:6px" href="#game">Тікелей ойынға</a>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#idea">Идея</a><a href="#steps">Алгоритм</a><a href="#calc">Калькулятор</a>
+  <a href="#thesis">Диссертацияда</a><a href="#game">Ойын</a><a href="#tasks">Есептер</a><a href="#faq">Сұрақ-жауап</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ================= IDEA ================= -->
+<section id="idea">
+  <div class="eyebrow">1 · Идея</div>
+  <h2>Q — «шеткі құйрықтарды» санау</h2>
+  <p>Екі топтың көрсеткіштерін бір сан сызығына салайық. Егер бір топ шынымен «жоғары» болса, оның бірқатар оқушысы екінші топтың ең жақсы нәтижесінен де асып түседі, ал екінші топтың бірқатар оқушысы бірінші топтың ең нашар нәтижесінен де төмен қалады. Q-критерийі дәл осы «қиылыспайтын құйрықтарды» санайды.</p>
+  <div class="formula">Q<span class="sub">эмп</span> = S<span class="sub">1</span> + S<span class="sub">2</span>
+    <small>S₁ — 1-таңдамада 2-таңдаманың ең үлкен мәнінен <b>үлкен</b> мәндер саны<br>S₂ — 2-таңдамада 1-таңдаманың ең кіші мәнінен <b>кіші</b> мәндер саны</small></div>
+
+  <div class="card">
+    <h3>🎚 Өзің көр: тәжірибелік топты жылжыт</h3>
+    <p class="muted">Мысал: 12 оқушыдан тұратын екі топ бір тест тапсырды (балл). Төмендегі жүгірткімен тәжірибелік топтың (ТТ) нәтижесін «оқыту әсері» ретінде жоғары не төмен жылжытыңыз. Q қалай өзгеретінін бақылаңыз.</p>
+    <div class="legend"><span><i class="a"></i>Тәжірибелік топ (ТТ)</span><span><i class="b"></i>Бақылау тобы (БТ)</span></div>
+    <div class="plot" id="demoPlot"></div>
+    <label for="shift">ТТ жылжуы: <b id="shiftVal">0</b> балл</label>
+    <input type="range" id="shift" min="-20" max="30" value="0">
+    <div class="meter" id="demoMeter"></div>
+    <div id="demoText"></div>
+  </div>
+</section>
+
+<!-- ================= STEPS ================= -->
+<section id="steps">
+  <div class="eyebrow">2 · Алгоритм</div>
+  <h2>4 қадаммен есептеу</h2>
+  <p>Нақты мысал: «Квадрат теңдеулер» тақырыбынан кейінгі тест (100 балл). ТТ және БТ — әрқайсысы 12 оқушы.</p>
+  <div class="card">
+    <div class="steps" id="stepBtns"></div>
+    <div class="legend"><span><i class="a"></i>ТТ</span><span><i class="b"></i>БТ</span></div>
+    <div class="plot" id="stepPlot"></div>
+    <div class="stepbox" id="stepText"></div>
+    <div class="row" style="justify-content:space-between;margin-top:10px">
+      <button class="btn ghost sm" id="stepPrev">← Алдыңғы</button>
+      <button class="btn sm" id="stepNext">Келесі →</button>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>📐 Гипотезалар</h3>
+      <ul class="clean">
+        <li><b>H₀:</b> екі таңдама арасындағы белгі деңгейінің айырмашылығы статистикалық маңызды емес.</li>
+        <li><b>H₁:</b> айырмашылық статистикалық маңызды.</li>
+      </ul>
+      <h3 style="margin-top:14px">✅ Шешім</h3>
+      <ul class="clean">
+        <li>Q<span class="sub">эмп</span> ≥ 9 → H₀ жоққа шығады, <b>p ≤ 0,01</b></li>
+        <li>6 ≤ Q<span class="sub">эмп</span> &lt; 9 → H₀ жоққа шығады, <b>p ≤ 0,05</b></li>
+        <li>Q<span class="sub">эмп</span> &lt; 6 → H₀ қабылданады</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>⚠️ Қолдану шарттары</h3>
+      <ul class="clean">
+        <li>Таңдамалар <b>тәуелсіз</b> (әр түрлі оқушылар).</li>
+        <li>Әр таңдамада <b>11 ≤ n ≤ 26</b>, көлемдері шамамен тең.</li>
+        <li>Ең үлкен мән бір таңдамада, ең кіші мән <b>екіншісінде</b> болуы керек.</li>
+        <li>Тең мәндер санауға кірмейді (қатаң «&gt;» және «&lt;»).</li>
+        <li>Өлшеу шәкілі — кемінде реттік (балл, деңгей).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CALC ================= -->
+<section id="calc">
+  <div class="eyebrow">3 · Калькулятор</div>
+  <h2>Өз деректеріңді енгіз</h2>
+  <p class="muted">Сандарды бос орынмен, нүктелі үтірмен немесе жаңа жолмен бөліңіз. Ондық бөлшек үшін үтір не нүкте қолданыңыз (мысалы, 7,5).</p>
+  <div class="card">
+    <div class="row" style="margin-bottom:6px">
+      <button class="btn ghost sm" data-preset="post">Мысал: қорытынды кесінді</button>
+      <button class="btn ghost sm" data-preset="pre">Мысал: бастапқы кесінді</button>
+      <button class="btn ghost sm" data-preset="rand">🎲 Кездейсоқ</button>
+    </div>
+    <div class="grid2">
+      <div><label for="nm1">1-топ атауы</label><input type="text" id="nm1" value="Тәжірибелік топ">
+        <label for="d1">Көрсеткіштер</label><textarea id="d1"></textarea></div>
+      <div><label for="nm2">2-топ атауы</label><input type="text" id="nm2" value="Бақылау тобы">
+        <label for="d2">Көрсеткіштер</label><textarea id="d2"></textarea></div>
+    </div>
+    <div id="calcOut"></div>
+  </div>
+</section>
+
+<!-- ================= THESIS ================= -->
+<section id="thesis">
+  <div class="eyebrow">4 · Диссертацияда</div>
+  <h2>Эксперимент бөлімінде қалай қолданамыз?</h2>
+  <p>Математика пәнін оқыту әдістемесі бойынша педагогикалық экспериментте әдетте екі топ болады: <b>тәжірибелік</b> (жаңа әдіс/технология) және <b>бақылау</b> (дәстүрлі оқыту). Q-критерийі екі сәтте қолданылады.</p>
+
+  <div class="timeline">
+    <div class="tl use"><b>1) Тексеруші/ констатациялаушы кезең</b>Бастапқы кесінді: ТТ мен БТ деңгейлері <u>тең</u> екенін дәлелдейміз. Күтілетін нәтиже: <b>Q &lt; 6</b>, H₀ қабылданады.</div>
+    <div class="tl no"><b>2) Қалыптастырушы кезең</b>Оқыту жүргізіледі. Бұл кезеңде Q қолданылмайды — ол әдістемелік жұмыс.</div>
+    <div class="tl use"><b>3) Қорытынды кезең</b>Соңғы кесінді: айырмашылық <u>бар</u> екенін көрсетеміз. Күтілетін нәтиже: <b>Q ≥ 6</b> (немесе ≥ 9).</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs" id="thTabs">
+      <button class="on" data-t="t1">Деректі дайындау</button>
+      <button data-t="t2">Мәтінді жазу үлгісі</button>
+      <button data-t="t3">Шектеулер</button>
+      <button data-t="t4">🧭 Критерий таңдау</button>
+    </div>
+
+    <div class="tabpane on" id="t1">
+      <ul class="clean">
+        <li>Бір <b>тақырып/модуль</b> бойынша бірдей тест (мысалы, 20 немесе 100 балл) беріңіз. Екі топқа тапсырмалар біркелкі, тексеру критерийі де ортақ болсын.</li>
+        <li>Әр оқушыдан бір сан алыңыз: жалпы балл. Деңгейлік бағалауды (жоғары / орта / төмен) 3-2-1 баллға ауыстырсаңыз, тең мәндер көп болады, Q-дың сезімталдығы төмендейді. Мүмкіндігінше балл шкаласын шығындамаңыз.</li>
+        <li>Таңдамаларды <b>11–26</b> оқушыдан құрыңыз. Топтар шамамен тең көлемде болсын.</li>
+        <li>Калькуляторға екі қатарды енгізіп, S₁, S₂ және Q-ды алыңыз да, <b>«Мәтін үлгісін»</b> диссертацияға көшіріңіз.</li>
+      </ul>
+      <div class="note info"><b>Мысал жазбасы (кесте үшін):</b> «Бастапқы кесінді: ТТ (n = 12), БТ (n = 12), Q<sub>эмп</sub> = 2; қорытынды кесінді: Q<sub>эмп</sub> = 15».</div>
+    </div>
+
+    <div class="tabpane" id="t2">
+      <p>Төмендегі мәтін калькулятордағы үлгіден алынған. Өз деректеріңізді енгізсеңіз, санамалар автоматты түрде өзгереді (калькулятор бөлімі).</p>
+      <div class="quote" id="thesisSample"></div>
+      <div class="row" style="margin-top:10px"><button class="btn sm" id="copyThesis">📋 Көшіру</button><span class="muted" id="copyMsg"></span></div>
+      <p class="muted" style="margin-top:10px">Кестеде ұсыныс: <i>Кезең · n₁ · n₂ · S₁ · S₂ · Q<sub>эмп</sub> · Q<sub>кр</sub> · қорытынды</i>.</p>
+    </div>
+
+    <div class="tabpane" id="t3">
+      <ul class="clean">
+        <li><b>Q — «экспресс-критерий».</b> Ол тек шеткі мәндерді пайдаланады, сондықтан бір шеткі нәтиже (аутлайер) оның мәнін өзгерте алады, қуаты да салыстырмалы түрде төмен.</li>
+        <li>Диссертацияда Q-ды көбіне <b>екінші критериймен</b> (Манн-Уитни U немесе қалыпты таралғанда Стьюдент t) бірге беру сенімдірек.</li>
+        <li>Бір топтың <b>«алдын-кейін»</b> нәтижесін салыстыру үшін Q жарамайды (тәуелді таңдамалар): белгілер G-критерийі немесе Вилкоксон T-критерийі қолданылады.</li>
+        <li>«Маңызды» айырмашылық әдістің <b>себебі</b> екенін өздігінен дәлелдемейді. Топтардың бастапқы теңдігін, мұғалімнің біркелкілігін, бақылау шарттарын сипаттау керек.</li>
+      </ul>
+    </div>
+
+    <div class="tabpane" id="t4">
+      <p class="muted">Өз жағдайыңызды таңдаңыз: тиісті критерийді ұсынамыз.</p>
+      <div class="grid2">
+        <div><label for="w1">Таңдамалар</label>
+          <select id="w1"><option value="ind">Әр түрлі оқушылар (ТТ және БТ)</option><option value="rel">Бір топ: алдын және кейін</option></select></div>
+        <div><label for="w2">Әр топтағы оқушы саны</label>
+          <select id="w2"><option value="s">11-ден кем</option><option value="m" selected>11–26</option><option value="l">26-дан артық</option></select></div>
+        <div><label for="w3">Деректің түрі</label>
+          <select id="w3"><option value="ord">Балл/деңгей, таралуы белгісіз</option><option value="norm">Балл, таралуы шамамен қалыпты</option></select></div>
+      </div>
+      <div id="wizOut" style="margin-top:12px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="game">
+  <div class="eyebrow">5 · Ойын</div>
+  <h2>🎯 Q-аңшы</h2>
+  <p>Әр раундта екі топ беріледі. Q-ға <b>кіретін нүктелерді басыңыз</b> (S₁ және S₂ мәндеріне есептелетіндер), содан кейін қорытындыны таңдаңыз. 5 раунд, максимум 500 ұпай.</p>
+  <div class="card" id="gameBox">
+    <div class="hud">
+      <span class="pill" id="gRound">Раунд 1/5</span>
+      <span class="pill" id="gScore">Ұпай: 0</span>
+      <button class="btn ghost sm" id="gHint">💡 Көмек (−10)</button>
+    </div>
+    <div class="legend"><span><i class="a"></i>А тобы</span><span><i class="b"></i>Б тобы</span><span>Нүктені басу = таңдау / алу</span></div>
+    <div class="plot clickable" id="gPlot"></div>
+    <div class="muted" id="gPicked" style="margin:6px 0"></div>
+    <h3 style="margin-top:10px">Қорытынды қандай?</h3>
+    <div class="opts" id="gOpts">
+      <button data-v="ns">Q &lt; 6<br><small>маңызды емес</small></button>
+      <button data-v="p05">6 ≤ Q &lt; 9<br><small>p ≤ 0,05</small></button>
+      <button data-v="p01">Q ≥ 9<br><small>p ≤ 0,01</small></button>
+    </div>
+    <div class="row">
+      <button class="btn" id="gCheck">Тексеру</button>
+      <button class="btn ghost" id="gNext" style="display:none">Келесі раунд →</button>
+    </div>
+    <div id="gFeedback"></div>
+  </div>
+</section>
+
+<!-- ================= TASKS ================= -->
+<section id="tasks">
+  <div class="eyebrow">6 · Есептер</div>
+  <h2>Өзіңді тексер</h2>
+  <p class="muted">Мұғалімге: өз тапсырмаларыңызды файл соңындағы <code>TASKS</code> тізіміне қосуға болады.</p>
+  <div id="taskList"></div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq">
+  <div class="eyebrow">7 · Сұрақ-жауап</div>
+  <h2>Жиі қойылатын сұрақтар</h2>
+  <details><summary>Неге n ≥ 11 керек?</summary>Q<sub>кр</sub> = 6 және 9 мәндері таңдама көлемі 11–26 аралығында болғанда пайдаланылады. Одан кіші көлемдерге Манн-Уитни U-критерийін қолданыңыз. Үлкен таңдамаларға (26-дан артық) кестелік мәндер басқа, сондықтан арнайы кестеден тексеріңіз немесе U/t қолданыңыз.</details>
+  <details><summary>Тең мәндер болса не істейміз?</summary>Санау қатаң теңсіздікпен жүреді: 2-таңдаманың ең үлкен мәніне <i>тең</i> мән S₁-ге кірмейді; 1-таңдаманың ең кіші мәніне <i>тең</i> мән S₂-ге кірмейді.</details>
+  <details><summary>Ең үлкен және ең кіші мән бір топта болса?</summary>Онда Q критерийі қолданылмайды: бір топ «шеттерді» екі жағынан да алып тұр, яғни ол жылжу емес, шашырау (дисперсия) айырмашылығы. Мұндай жағдайда басқа критерий таңдаңыз.</details>
+  <details><summary>Q пен Манн-Уитни U қандай айырмашылық?</summary>Q — тез және көрнекі, бірақ тек шеткі мәндерге сүйенеді. U барлық мәндердің рангтарын пайдаланады, сондықтан әдетте сезімтал әрі сенімдірек.</details>
+  <details><summary>Шкала қандай болуы керек?</summary>Кемінде реттік: баллдар, деңгейлер. Бірақ деңгейлерді 1-2-3 санына айналдырсаңыз, тең мәндер көбейеді, Q әлсірейді.</details>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <b>Пайдаланылған әдебиет (тексеруді ұсынамыз):</b><br>
+  Сидоренко Е. В. Методы математической обработки в психологии. — СПб.: Речь, 2001.<br>
+  Rosenbaum S. Tables for a nonparametric test of location // Annals of Mathematical Statistics, 1953, 24, 146–150.<br>
+  <span class="muted">Бұл бет оқу мақсатына арналған. Диссертацияға енгізер алдында кестелік мәндерді өз дереккөзіңізден тексеріңіз.</span>
+</div></footer>
+
+<script>
+/* =====================================================
+   Көмекші функциялар
+===================================================== */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function parse(t){return t.replace(/,/g,'.').split(/[\s;]+/).filter(Boolean).map(Number).filter(x=>isFinite(x));}
+const maxOf=a=>Math.max(...a), minOf=a=>Math.min(...a);
+
+/* Q-критерийін есептеу.  a, b — екі таңдама.  */
+function compute(a,b){
+  const r={a,b,ok:false,topIs:null,S1:0,S2:0,Q:0,cntA:new Set(),cntB:new Set(),reason:''};
+  if(!a.length||!b.length){r.reason='empty';return r;}
+  const ma=maxOf(a), mb=maxOf(b);
+  if(ma===mb){r.reason='tieMax';return r;}
+  r.topIs = ma>mb?'a':'b';
+  const top=r.topIs==='a'?a:b, bot=r.topIs==='a'?b:a;
+  if(!(minOf(bot)<minOf(top))){r.reason='extremes';return r;}
+  r.ok=true; r.lineHi=maxOf(bot); r.lineLo=minOf(top);
+  const cT=new Set(), cB=new Set();
+  top.forEach((v,i)=>{if(v>r.lineHi)cT.add(i)});
+  bot.forEach((v,i)=>{if(v<r.lineLo)cB.add(i)});
+  r.S1=cT.size; r.S2=cB.size; r.Q=r.S1+r.S2;
+  r.cntA=r.topIs==='a'?cT:cB; r.cntB=r.topIs==='a'?cB:cT;
+  r.overlap = r.lineLo<r.lineHi;
+  return r;
+}
+function decide(Q){return Q>=9?'p01':Q>=6?'p05':'ns';}
+const VERDICT={ns:'Маңызды емес (Q < 6)',p05:'Маңызды: p ≤ 0,05',p01:'Өте маңызды: p ≤ 0,01'};
+
+/* Сан сызығындағы нүктелік диаграмма (SVG) */
+function dotplot(a,b,o={}){
+  o=Object.assign({nameA:'А',nameB:'Б',res:null,lines:false,s1:false,s2:false,cls:null},o);
+  const W=720,H=270,m=34,r=8,yA=104,yB=194,yAx=242,res=o.res;
+  const all=a.concat(b); let lo=minOf(all),hi=maxOf(all); const pad=Math.max((hi-lo)*.06,1); lo-=pad;hi+=pad;
+  const X=v=>m+(v-lo)/(hi-lo)*(W-2*m);
+  const rough=(hi-lo)/7, p=Math.pow(10,Math.floor(Math.log10(rough)));
+  let step=p; for(const k of [1,2,5,10]){if(k*p>=rough){step=k*p;break;}}
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Екі таңдаманың сан сызығындағы орналасуы">`;
+  if(o.lines&&res&&res.ok){
+    const x1=X(Math.min(res.lineLo,res.lineHi)), x2=X(Math.max(res.lineLo,res.lineHi));
+    if(res.overlap){s+=`<rect class="zone" x="${x1}" y="46" width="${x2-x1}" height="${yAx-46}"/><text class="zonetxt" x="${(x1+x2)/2}" y="${yAx-6}" text-anchor="middle">қиылысу аймағы</text>`;}
+    const nm=k=>k==='a'?o.nameA:o.nameB, topN=nm(res.topIs), botN=nm(res.topIs==='a'?'b':'a');
+    const L1={v:res.lineLo,t:`min ${topN} = ${res.lineLo}`}, L2={v:res.lineHi,t:`max ${botN} = ${res.lineHi}`};
+    const left=L1.v<=L2.v?L1:L2, right=L1.v<=L2.v?L2:L1;
+    s+=`<line class="bound" x1="${X(left.v)}" x2="${X(left.v)}" y1="40" y2="${yAx}"/><text class="boundtxt" x="${X(left.v)-4}" y="34" text-anchor="end">${esc(left.t)}</text>`;
+    s+=`<line class="bound" x1="${X(right.v)}" x2="${X(right.v)}" y1="40" y2="${yAx}"/><text class="boundtxt" x="${X(right.v)+4}" y="34" text-anchor="start">${esc(right.t)}</text>`;
+  }
+  s+=`<g class="ax"><line x1="${m}" x2="${W-m}" y1="${yAx}" y2="${yAx}"/>`;
+  for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step){const x=X(t);s+=`<line x1="${x}" x2="${x}" y1="${yAx}" y2="${yAx+5}"/><text x="${x}" y="${yAx+20}" text-anchor="middle">${+t.toFixed(6)}</text>`;}
+  s+='</g>';
+  s+=`<text class="rowlbl" x="${m}" y="${yA-34}">${esc(o.nameA)}</text><text class="rowlbl" x="${m}" y="${yB-34}">${esc(o.nameB)}</text>`;
+  const hl=(o.s1||o.s2)&&res&&res.ok;
+  const topA=res&&res.topIs==='a';
+  const draw=(arr,row,base,cls,key,cnt,flag)=>{
+    const seen={}; let out='';
+    arr.forEach((v,i)=>{
+      seen[v]=(seen[v]||0)+1; const y=base-(seen[v]-1)*(2*r-1), k=key+i;
+      let c=`dot ${cls}`;
+      if(hl){ if(cnt.has(i)&&flag) c+=' cnt'; else c+=' dim'; }
+      if(o.cls){const e=o.cls(k); if(e)c+=' '+e;}
+      out+=`<circle class="${c}" cx="${X(v)}" cy="${y}" r="${r}" data-k="${k}"><title>${esc(row)}: ${v}</title></circle>`;
+    });
+    return out;
+  };
+  const flagA=res?(topA?o.s1:o.s2):false, flagB=res?(topA?o.s2:o.s1):false;
+  s+=draw(a,o.nameA,yA,'dA','a',res?res.cntA:new Set(),flagA);
+  s+=draw(b,o.nameB,yB,'dB','b',res?res.cntB:new Set(),flagB);
+  return s+'</svg>';
+}
+function meter(Q){
+  const MAX=24, pct=Math.min(Q,MAX)/MAX*100, d=decide(Q);
+  return `<div class="fill ${d}" style="width:${Math.max(pct,6)}%"></div>
+  <div class="tick" style="left:${6/MAX*100}%"><span>6 (0,05)</span></div>
+  <div class="tick" style="left:${9/MAX*100}%"><span>9 (0,01)</span></div>
+  <div class="val">Q = ${Q}</div>`;
+}
+
+/* =====================================================
+   1. Жүгірткі демо
+===================================================== */
+const baseK=[48,55,58,60,61,63,64,66,68,70,72,74], baseE=[52,54,57,59,62,65,67,69,71,73,76,78];
+function drawDemo(){
+  const d=+$('#shift').value; $('#shiftVal').textContent=(d>0?'+':'')+d;
+  const e=baseE.map(v=>v+d), res=compute(e,baseK);
+  $('#demoPlot').innerHTML=dotplot(e,baseK,{nameA:'ТТ',nameB:'БТ',res,lines:true,s1:true,s2:true});
+  $('#demoMeter').innerHTML=meter(res.Q);
+  let t='';
+  if(!res.ok){
+    t=`<span class="badge na">Q қолданылмайды</span> <span class="muted">${res.reason==='tieMax'?'Ең үлкен мән екі топта бірдей.':'Ең үлкен және ең кіші мән бір топта.'} Жүгірткіні жылжытыңыз.</span>`;
+  }else{
+    const topN=res.topIs==='a'?'ТТ':'БТ', botN=res.topIs==='a'?'БТ':'ТТ';
+    t=`<span class="badge ${decide(res.Q)}">${VERDICT[decide(res.Q)]}</span>
+    <p><b>S₁ = ${res.S1}</b> (${topN}-да ${res.lineHi}-ден жоғары), <b>S₂ = ${res.S2}</b> (${botN}-да ${res.lineLo}-ден төмен) → <b>Q = ${res.Q}</b>.</p>`;
+    if(d===0)t+=`<p class="muted">Жылжу жоқ — топтар іс жүзінде бірдей, құйрықтар аз.</p>`;
+  }
+  $('#demoText').innerHTML=t;
+}
+$('#shift').addEventListener('input',drawDemo); drawDemo();
+
+/* =====================================================
+   2. Қадамдар (мысал)
+===================================================== */
+const EX={E:[78,85,90,72,88,95,82,91,86,79,93,84],K:[65,70,74,68,80,77,62,71,75,69,73,81]};
+const exRes=compute(EX.E,EX.K);
+const STEPS=[
+ {t:'1 · Реттеу',f:{},h:()=>`<b>Екі таңдаманы сан сызығына салыңыз.</b> Әр нүкте — бір оқушының балы. Бір қарағанда ТТ оңға (жоғары) қарай жылжығандай көрінеді, бірақ көзбен шешім шығаруға болмайды: нақты есептеу керек.`},
+ {t:'2 · Шекаралар',f:{lines:1},h:r=>`<b>1-таңдама — ең үлкен мәні бар топ</b> (бұл жерде ТТ, максимум ${maxOf(EX.E)}). Қалғаны — 2-таңдама (БТ). Екі шекара сызығын жүргіземіз: <b>max(БТ) = ${r.lineHi}</b> және <b>min(ТТ) = ${r.lineLo}</b>. Олардың арасы — қиылысу аймағы. Q тек осы аймақтан <u>тыс</u> нүктелерді санайды.`},
+ {t:'3 · S₁',f:{lines:1,s1:1},h:r=>`<b>S₁ — ТТ-да ${r.lineHi}-ден жоғары нүктелер саны.</b> Қарамен белгіленген нүктелерді санаңыз: <b>S₁ = ${r.S1}</b>. (${r.lineHi}-ге тең мән кірмейді.)`},
+ {t:'4 · S₂ және Q',f:{lines:1,s1:1,s2:1},h:r=>`<b>S₂ — БТ-да ${r.lineLo}-ден төмен нүктелер саны:</b> <b>S₂ = ${r.S2}</b>.<br><b>Q<sub>эмп</sub> = ${r.S1} + ${r.S2} = ${r.Q}</b>. Q<sub>эмп</sub> = ${r.Q} ≥ Q<sub>кр</sub>(0,01) = 9 → H₀ жоққа шығады: айырмашылық <b>p ≤ 0,01</b> деңгейінде маңызды.`}
+];
+let stepI=0;
+function drawStep(){
+  const S=STEPS[stepI];
+  $('#stepPlot').innerHTML=dotplot(EX.E,EX.K,{nameA:'ТТ',nameB:'БТ',res:exRes,lines:!!S.f.lines,s1:!!S.f.s1,s2:!!S.f.s2});
+  $('#stepText').innerHTML=S.h(exRes);
+  $$('#stepBtns button').forEach((b,i)=>{b.classList.toggle('on',i===stepI);b.classList.toggle('done',i<stepI)});
+  $('#stepPrev').disabled=stepI===0; $('#stepNext').disabled=stepI===STEPS.length-1;
+}
+$('#stepBtns').innerHTML=STEPS.map((s,i)=>`<button data-i="${i}">${s.t}</button>`).join('');
+$('#stepBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(b){stepI=+b.dataset.i;drawStep();}});
+$('#stepPrev').onclick=()=>{stepI=Math.max(0,stepI-1);drawStep()};
+$('#stepNext').onclick=()=>{stepI=Math.min(STEPS.length-1,stepI+1);drawStep()};
+drawStep();
+
+/* =====================================================
+   3. Калькулятор
+===================================================== */
+const PRESETS={
+  post:{a:[78,85,90,72,88,95,82,91,86,79,93,84],b:[65,70,74,68,80,77,62,71,75,69,73,81]},
+  pre:{a:[60,66,72,58,69,75,63,67,71,61,64,70],b:[59,65,70,57,68,73,62,66,74,60,63,69]}
+};
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function genPair(n=12,shift=0){
+  const g=sh=>Array.from({length:n},()=>Math.max(30,Math.min(100,Math.round(65+sh+9*randn()))));
+  return [g(shift),g(0)];
+}
+function critInfo(n1,n2){
+  const w=[];
+  if(n1<11||n2<11)w.push('Таңдама көлемі 11-ден кіші: Q<sub>кр</sub> мәндері (6 және 9) бұл жағдайға арналмаған. Манн-Уитни U-критерийін қолданыңыз.');
+  if(n1>26||n2>26)w.push('Таңдама 26-дан үлкен: Q<sub>кр</sub> мәндері өзгеше. Арнайы кестеден тексеріңіз не U/t-критерийлерін қолданыңыз.');
+  if(Math.abs(n1-n2)>5)w.push('Таңдама көлемдері айтарлықтай өзгеше: критерий көлемдері шамамен тең таңдамалар үшін есептелген.');
+  return w;
+}
+function thesisText(res,n1,n2,nmA,nmB){
+  if(!res.ok)return '';
+  const d=decide(res.Q), top=res.topIs==='a'?nmA:nmB;
+  const head=`Екі таңдама («${nmA}», n₁ = ${n1}; «${nmB}», n₂ = ${n2}) арасындағы белгі деңгейінің айырмашылығын Розенбаум Q-критерийі арқылы тексердік. Есептеу нәтижесінде S₁ = ${res.S1}, S₂ = ${res.S2}, Q_эмп = ${res.Q} болды. `;
+  if(d==='ns')return head+`Q_эмп < Q_кр(0,05) = 6 болғандықтан, нөлдік гипотеза (H₀) қабылданады: таңдамалар арасындағы айырмашылық статистикалық маңызды емес.`;
+  if(d==='p05')return head+`6 ≤ Q_эмп < 9, яғни Q_эмп ≥ Q_кр(0,05) = 6, Q_эмп < Q_кр(0,01) = 9. Сондықтан H₀ жоққа шығарылады, H₁ қабылданады: айырмашылық p ≤ 0,05 деңгейінде статистикалық маңызды; көрсеткіштің жоғары деңгейі «${top}» таңдамасында байқалады.`;
+  return head+`Q_эмп ≥ Q_кр(0,01) = 9 болғандықтан, H₀ жоққа шығарылады, H₁ қабылданады: айырмашылық p ≤ 0,01 деңгейінде статистикалық маңызды; көрсеткіштің жоғары деңгейі «${top}» таңдамасында байқалады.`;
+}
+let lastThesis='';
+function drawCalc(){
+  const a=parse($('#d1').value), b=parse($('#d2').value);
+  const nmA=$('#nm1').value.trim()||'1-топ', nmB=$('#nm2').value.trim()||'2-топ';
+  const out=$('#calcOut');
+  if(a.length<2||b.length<2){out.innerHTML='<div class="note info">Екі топқа да кемінде 2-ден сан енгізіңіз.</div>';lastThesis='';updateThesisTab();return;}
+  const res=compute(a,b); let h='';
+  h+=`<div class="legend" style="margin-top:14px"><span><i class="a"></i>${esc(nmA)} (n = ${a.length})</span><span><i class="b"></i>${esc(nmB)} (n = ${b.length})</span></div>`;
+  h+=`<div class="plot">${dotplot(a,b,{nameA:nmA,nameB:nmB,res,lines:true,s1:true,s2:true})}</div>`;
+  if(!res.ok){
+    h+=`<div class="note bad"><b>Q-критерийі қолданылмайды.</b> ${res.reason==='tieMax'?'Ең үлкен мән екі таңдамада бірдей, сондықтан 1-таңдама анықталмайды.':'Ең үлкен және ең кіші мән бір таңдамада орналасқан: бір топ екі шетте де тұр. Бұл деңгейдің жылжуы емес, шашыраудың айырмашылығы. Басқа критерий таңдаңыз.'}</div>`;
+    lastThesis='';
+  }else{
+    const d=decide(res.Q), topN=res.topIs==='a'?nmA:nmB, botN=res.topIs==='a'?nmB:nmA;
+    h+=`<div class="stats"><div class="stat"><b>${esc(topN)}</b><span>1-таңдама (max-тың иесі)</span></div>
+      <div class="stat"><b>${res.S1}</b><span>S₁ (&gt; ${res.lineHi})</span></div>
+      <div class="stat"><b>${res.S2}</b><span>S₂ (&lt; ${res.lineLo})</span></div>
+      <div class="stat big"><b>${res.Q}</b><span>Q эмп</span></div>
+      <div class="stat"><b>6 / 9</b><span>Q кр (0,05 / 0,01)</span></div></div>`;
+    h+=`<div class="meter">${meter(res.Q)}</div>`;
+    h+=`<p><span class="badge ${d}">${VERDICT[d]}</span></p>`;
+    if(!res.overlap)h+=`<div class="note info">Диапазондар қиылыспайды: ${esc(topN)}-ның барлық нәтижесі ${esc(botN)}-ның ең үлкен нәтижесінен жоғары. Айырмашылық көзбен де анық.</div>`;
+    const tie=(res.topIs==='a'?a:b).includes(res.lineHi)||(res.topIs==='a'?b:a).includes(res.lineLo);
+    if(tie)h+=`<div class="note info">Шекаралық мәнге тең нәтижелер бар: олар S₁/S₂-ге кірмейді (қатаң теңсіздік).</div>`;
+    critInfo(a.length,b.length).forEach(w=>h+=`<div class="note">${w}</div>`);
+    lastThesis=thesisText(res,a.length,b.length,nmA,nmB);
+    h+=`<h3 style="margin-top:14px">📄 Диссертацияға арналған мәтін</h3><div class="quote">${esc(lastThesis)}</div>`;
+  }
+  out.innerHTML=h; updateThesisTab();
+}
+function updateThesisTab(){
+  $('#thesisSample').textContent=lastThesis||'Алдымен калькулятор бөлімінде екі топтың деректерін енгізіңіз (Q қолданылатын жағдайда мәтін осында шығады).';
+}
+function setData(a,b){ $('#d1').value=a.join(' '); $('#d2').value=b.join(' '); drawCalc(); }
+$$('[data-preset]').forEach(btn=>btn.onclick=()=>{
+  const k=btn.dataset.preset;
+  if(k==='rand'){const [x,y]=genPair(12,[0,4,8,14,20][Math.floor(Math.random()*5)]);setData(x,y);}
+  else setData(PRESETS[k].a,PRESETS[k].b);
+});
+['d1','d2','nm1','nm2'].forEach(id=>$('#'+id).addEventListener('input',drawCalc));
+setData(PRESETS.post.a,PRESETS.post.b);
+
+/* =====================================================
+   4. Диссертация: tabs, копия, мастер
+===================================================== */
+$('#thTabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  $$('#thTabs button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.tabpane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.t));
+});
+$('#copyThesis').onclick=async()=>{
+  const t=$('#thesisSample').textContent; let ok=true;
+  try{await navigator.clipboard.writeText(t);}catch(e){
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch(_){ok=false}ta.remove();
+  }
+  $('#copyMsg').textContent=ok?'Көшірілді ✓':'Көшіру сәтсіз, мәтінді қолмен белгілеңіз';
+  setTimeout(()=>$('#copyMsg').textContent='',2500);
+};
+function wizard(){
+  const w1=$('#w1').value,w2=$('#w2').value,w3=$('#w3').value; let h='';
+  if(w1==='rel'){
+    h=`<div class="note bad"><b>Q жарамайды</b> — таңдамалар тәуелді (бір оқушылар екі рет өлшенген).</div>
+    <ul class="clean"><li><b>Белгілер G-критерийі</b> — қарапайым, бағыт бойынша.</li><li><b>Вилкоксон T-критерийі</b> — айырмалардың шамасын да ескереді.</li>${w3==='norm'?'<li>Қалыпты таралғанда — тәуелді таңдамалар үшін Стьюдент t.</li>':''}</ul>`;
+  }else if(w2==='s'){
+    h=`<div class="note bad"><b>Q қолданылмайды</b> (n &lt; 11).</div><ul class="clean"><li><b>Манн-Уитни U-критерийі</b> — кіші таңдамаларға да жарайды.</li></ul>`;
+  }else if(w2==='m'){
+    h=`<div class="note ok"><b>Q-критерийі қолайлы</b> (екі тәуелсіз таңдама, 11–26).</div><ul class="clean"><li>Негізгі: <b>Розенбаум Q</b>.</li><li>Қосымша (сенімділікті арттыру үшін): <b>Манн-Уитни U</b>${w3==='norm'?' немесе <b>Стьюдент t</b>':''}.</li></ul>`;
+  }else{
+    h=`<div class="note"><b>Q</b> үшін кестелік мәндер басқа (n &gt; 26).</div><ul class="clean"><li><b>Манн-Уитни U</b> — ұсынылады.</li>${w3==='norm'?'<li><b>Стьюдент t</b> — қалыпты таралу тексерілсе.</li>':''}</ul>`;
+  }
+  $('#wizOut').innerHTML=h;
+}
+['w1','w2','w3'].forEach(id=>$('#'+id).addEventListener('change',wizard)); wizard();
+
+/* =====================================================
+   5. Ойын «Q-аңшы»
+===================================================== */
+const G={round:0,score:0,sel:new Set(),phase:'pick',hint:false,data:null,concl:null,total:5};
+function newRound(){
+  let a,b,res,tries=0;
+  do{
+    const sh=[0,3,6,9,12,16,22][Math.floor(Math.random()*7)], toA=Math.random()<.5;
+    const p=genPair(12,sh); a=toA?p[0]:p[1]; b=toA?p[1]:p[0];
+    res=compute(a,b); tries++;
+  }while((!res.ok||res.Q<2)&&tries<300);
+  G.data={a,b,res}; G.sel=new Set(); G.phase='pick'; G.hint=false; G.concl=null;
+  $('#gFeedback').innerHTML=''; $('#gNext').style.display='none'; $('#gCheck').style.display='';
+  $('#gHint').disabled=false;
+  $$('#gOpts button').forEach(b=>b.className='');
+  drawGame();
+}
+function gameCls(k){
+  if(G.phase==='pick')return G.sel.has(k)?'sel':'';
+  const {res}=G.data, inCnt=k[0]==='a'?res.cntA.has(+k.slice(1)):res.cntB.has(+k.slice(1)), picked=G.sel.has(k);
+  if(picked&&inCnt)return 'ok'; if(picked&&!inCnt)return 'bad'; if(!picked&&inCnt)return 'miss'; return '';
+}
+function drawGame(){
+  const {a,b,res}=G.data;
+  $('#gPlot').innerHTML=dotplot(a,b,{nameA:'А тобы',nameB:'Б тобы',res,lines:G.hint||G.phase==='done',cls:gameCls});
+  $('#gRound').textContent=`Раунд ${G.round+1}/${G.total}`;
+  $('#gScore').textContent=`Ұпай: ${G.score}`;
+  $('#gPicked').textContent=`Таңдалған нүктелер: ${G.sel.size}`;
+}
+$('#gPlot').addEventListener('click',e=>{
+  const c=e.target.closest('.dot'); if(!c||G.phase!=='pick')return;
+  const k=c.dataset.k; G.sel.has(k)?G.sel.delete(k):G.sel.add(k); drawGame();
+});
+$('#gHint').onclick=()=>{if(G.phase==='pick'&&!G.hint){G.hint=true;$('#gHint').disabled=true;drawGame();}};
+$('#gOpts').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||G.phase!=='pick')return;
+  G.concl=b.dataset.v; $$('#gOpts button').forEach(x=>x.className=x===b?'on':'');
+});
+$('#gCheck').onclick=()=>{
+  if(G.phase!=='pick')return;
+  if(!G.concl){$('#gFeedback').innerHTML='<div class="note">Алдымен қорытындыны таңдаңыз.</div>';return;}
+  const {res}=G.data;
+  const truth=new Set([...res.cntA].map(i=>'a'+i).concat([...res.cntB].map(i=>'b'+i)));
+  let good=0,bad=0; G.sel.forEach(k=>truth.has(k)?good++:bad++);
+  const missed=truth.size-good, acc=Math.max(0,(good-bad)/truth.size);
+  const cOk=G.concl===decide(res.Q);
+  let pts=Math.round(acc*80)+(cOk?20:0)-(G.hint?10:0); pts=Math.max(0,pts);
+  G.score+=pts; G.phase='done';
+  const optsB=$$('#gOpts button'); optsB.forEach(x=>{const v=x.dataset.v;x.className=v===decide(res.Q)?'right':(v===G.concl?'wrong':'')});
+  const topN=res.topIs==='a'?'А':'Б';
+  $('#gFeedback').innerHTML=`<div class="note ${cOk&&!bad&&!missed?'ok':'info'}"><b>+${pts} ұпай.</b> Дұрыс: ${good}, артық басқан: ${bad}, қалып қойған: ${missed}.<br>
+   1-таңдама — «${topN} тобы» (max = ${res.topIs==='a'?maxOf(res.a):maxOf(res.b)}). S₁ = ${res.S1}, S₂ = ${res.S2}, <b>Q = ${res.Q}</b> → ${VERDICT[decide(res.Q)]}.<br>
+   <span class="muted">Жасыл сақина — дұрыс, қызыл — артық, үзік сары — жіберіп алған нүкте.</span></div>`;
+  $('#gCheck').style.display='none'; $('#gNext').style.display='';
+  $('#gNext').textContent=G.round+1>=G.total?'Нәтижені көру':'Келесі раунд →';
+  drawGame();
+};
+$('#gNext').onclick=()=>{
+  if(G.round+1>=G.total){
+    const s=G.score, title=s>=420?'🏆 Статистика шебері':s>=300?'🎓 Тәжірибелі зерттеуші':s>=150?'📚 Үйреніп жатқан магистрант':'🌱 Жаңадан бастаушы';
+    $('#gameBox').innerHTML=`<div style="text-align:center;padding:16px"><h3>${title}</h3><p style="font-size:2rem;font-weight:800;margin:6px 0">${s} / 500</p>
+      <p class="muted">Q-ны көзбен тез бағалау — диссертацияда нәтижені тексеруге көмектеседі.</p><button class="btn" onclick="location.hash='#game';resetGame()">Қайта ойнау</button></div>`;
+    return;
+  }
+  G.round++; newRound();
+};
+function resetGame(){location.reload();}
+newRound();
+
+/* =====================================================
+   6. Есептер  (TASKS-ты өзгертуге болады)
+===================================================== */
+const TASKS=[
+ {type:'calc',title:'Квадрат теңдеулер (20 балл)',
+  text:'Қорытынды кесіндінің нәтижелері. ТТ мен БТ арасындағы айырмашылықты Q-критерийімен тексеріңіз.',
+  nameA:'ТТ',nameB:'БТ',
+  a:[17,15,18,14,19,16,13,18,15,20,16,17],b:[12,14,11,15,13,16,10,14,12,15,13,11]},
+ {type:'calc',title:'Геометрия: үшбұрыштар (100 балл)',
+  text:'Қорытынды кесінді. Q-ды есептеп, қандай деңгейде маңызды екенін анықтаңыз.',
+  nameA:'ТТ',nameB:'БТ',
+  a:[64,71,58,77,69,74,66,81,72,68,75,79],b:[55,62,70,59,65,73,57,68,63,60,67,71]},
+ {type:'calc',title:'Бастапқы кесінді (тепе-теңдікті тексеру)',
+  text:'Эксперимент басталмас бұрын топтардың деңгейі тең бе? Нәтиже қандай болса, эксперимент үшін жақсы?',
+  nameA:'ТТ',nameB:'БТ',
+  a:[60,66,72,58,69,75,63,67,71,61,64,70],b:[59,65,70,57,68,73,62,66,74,60,63,69]},
+ {type:'mc',title:'Q-критерийі қайда қолданылады?',
+  text:'Дұрыс жағдайларды белгілеңіз (бірнешеу болуы мүмкін).',
+  opts:[
+   ['Бір топтың тест алдындағы және тесттен кейінгі нәтижесі (n = 25)',false,'Тәуелді таңдамалар: G немесе Вилкоксон T.'],
+   ['ТТ (n = 14) және БТ (n = 15) қорытынды балдары',true,'Тәуелсіз таңдамалар, көлем 11–26 аралығында.'],
+   ['ТТ (n = 7) және БТ (n = 8) қорытынды балдары',false,'n < 11: Манн-Уитни U қолданылады.'],
+   ['Екі топта да n = 20, бірақ ең үлкен және ең кіші мән ТТ-да',false,'Экстремумдар бір топта: Q қолданылмайды.']
+  ]},
+ {type:'open',title:'Өз зерттеуің: гипотезаларды жаз',
+  text:'Өз тақырыбыңыз бойынша (мысалы, «Функция» тақырыбын оқыту) H₀ мен H₁ гипотезаларын Q-критерийі үшін тұжырымдаңыз.',
+  model:'H₀: «Функция» тақырыбы бойынша тест нәтижелерінің деңгейі тәжірибелік және бақылау топтарында статистикалық маңызды ерекшеленбейді. H₁: тәжірибелік топтағы нәтижелердің деңгейі бақылау тобынан статистикалық маңызды жоғары. Шешім: Q_эмп ≥ Q_кр(0,05) = 6 болса, H₀ жоққа шығарылады.'}
+];
+function taskHTML(t,i){
+  let h=`<div class="card task"><h3><span class="n">${i+1}</span>${esc(t.title)}</h3><p>${esc(t.text)}</p>`;
+  if(t.type==='calc'){
+    h+=`<b>${esc(t.nameA)}</b> (n = ${t.a.length})<div class="data a">${t.a.map(v=>`<span>${v}</span>`).join('')}</div>
+    <b>${esc(t.nameB)}</b> (n = ${t.b.length})<div class="data b">${t.b.map(v=>`<span>${v}</span>`).join('')}</div>
+    <div class="inputs"><div><label>S₁</label><input type="number" min="0" data-f="s1"></div>
+    <div><label>S₂</label><input type="number" min="0" data-f="s2"></div>
+    <div><label>Қорытынды</label><select data-f="c"><option value="">—</option><option value="ns">Маңызды емес (Q &lt; 6)</option><option value="p05">p ≤ 0,05</option><option value="p01">p ≤ 0,01</option></select></div></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="check">Тексеру</button><button class="btn ghost sm" data-act="show">Шешімін көру</button></div>`;
+  }else if(t.type==='mc'){
+    h+=`<div class="mc">${t.opts.map((o,j)=>`<label><input type="checkbox" data-j="${j}"><span>${esc(o[0])}</span></label>`).join('')}</div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="check">Тексеру</button></div>`;
+  }else{
+    h+=`<textarea placeholder="H₀ ... H₁ ..." style="font-family:inherit"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="show">Үлгі жауапты көру</button></div>`;
+  }
+  return h+`<div class="out" style="margin-top:10px"></div></div>`;
+}
+$('#taskList').innerHTML=TASKS.map(taskHTML).join('');
+$$('#taskList .task').forEach((el,i)=>{
+  const t=TASKS[i], out=$('.out',el);
+  el.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-act]'); if(!btn)return;
+    if(t.type==='calc'){
+      const res=compute(t.a,t.b);
+      if(btn.dataset.act==='check'){
+        const s1=$('[data-f=s1]',el).value, s2=$('[data-f=s2]',el).value, c=$('[data-f=c]',el).value;
+        if(s1===''||s2===''||!c){out.innerHTML='<div class="note">S₁, S₂ және қорытындыны толтырыңыз.</div>';return;}
+        const r1=+s1===res.S1, r2=+s2===res.S2, r3=c===decide(res.Q);
+        const all=r1&&r2&&r3;
+        out.innerHTML=`<div class="note ${all?'ok':'bad'}">${all?'🎉 Дұрыс!':'Әлі қате бар.'} S₁: ${r1?'✓':'✗'} · S₂: ${r2?'✓':'✗'} · Қорытынды: ${r3?'✓':'✗'}${all?` (Q = ${res.Q})`:'. «Шешімін көру» батырмасын басып, қадамдарды қараңыз.'}</div>`;
+      }else{
+        const topN=res.topIs==='a'?t.nameA:t.nameB;
+        out.innerHTML=`<div class="plot">${dotplot(t.a,t.b,{nameA:t.nameA,nameB:t.nameB,res,lines:true,s1:true,s2:true})}</div>
+        <div class="note info">1-таңдама: <b>${esc(topN)}</b>. S₁ = ${res.S1}, S₂ = ${res.S2}, <b>Q = ${res.Q}</b> → ${VERDICT[decide(res.Q)]}.</div>`;
+      }
+    }else if(t.type==='mc'){
+      let all=true, h='';
+      $$('input',el).forEach((cb,j)=>{const o=t.opts[j]; if(cb.checked!==o[1])all=false; h+=`<li>${o[1]?'✅':'❌'} ${esc(o[0])} <span class="muted">— ${esc(o[2])}</span></li>`;});
+      out.innerHTML=`<div class="note ${all?'ok':'bad'}">${all?'🎉 Дұрыс!':'Дұрыс емес жауап бар.'}</div><ul class="clean" style="list-style:none;padding:0">${h}</ul>`;
+    }else{
+      out.innerHTML=`<div class="note info"><b>Үлгі:</b> ${esc(t.model)}</div>`;
+    }
+  });
+});
+</script>
+</body>
+</html>
